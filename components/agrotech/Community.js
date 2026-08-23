@@ -1,10 +1,28 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Heart, MessageCircle, Image as ImageIcon, Loader2, X, Send } from 'lucide-react'
+import { Heart, MessageCircle, Image as ImageIcon, Loader2, X, Send, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_FILE_SIZE_MB = 10
+
 async function uploadPostMedia(file, userId) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error('Format gambar tidak didukung. Gunakan JPG, PNG, WebP, atau GIF.')
+  }
+  if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    throw new Error(`Ukuran gambar maksimal ${MAX_FILE_SIZE_MB}MB.`)
+  }
   const supabase = getSupabaseBrowserClient()
   const ext = file.name.split('.').pop()
   const path = `${userId}/${crypto.randomUUID()}.${ext}`
@@ -22,6 +40,7 @@ export default function Community({ userId }) {
   const [file, setFile] = useState(null)
   const [posting, setPosting] = useState(false)
   const [activeComments, setActiveComments] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -39,14 +58,44 @@ export default function Community({ userId }) {
     try {
       let media_urls = []
       if (file) media_urls = [await uploadPostMedia(file, userId)]
-      const res = await fetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, media_urls }) })
-      if (res.ok) { setContent(''); setFile(null); load() }
-    } finally { setPosting(false) }
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, media_urls })
+      })
+      if (res.ok) {
+        setContent('')
+        setFile(null)
+        toast.success('Post berhasil dibagikan!')
+        load()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Gagal memposting')
+      }
+    } catch (e) {
+      toast.error(e.message || 'Gagal mengunggah gambar')
+    } finally {
+      setPosting(false)
+    }
   }
 
   const toggleLike = async (post) => {
-    setPosts(prev => prev.map(p => p.id === post.id ? { ...p, liked_by_me: !p.liked_by_me, likes_count: p.liked_by_me ? p.likes_count - 1 : p.likes_count + 1 } : p))
+    setPosts(prev => prev.map(p => p.id === post.id
+      ? { ...p, liked_by_me: !p.liked_by_me, likes_count: p.liked_by_me ? p.likes_count - 1 : p.likes_count + 1 }
+      : p))
     await fetch(`/api/posts/${post.id}/like`, { method: 'POST' })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    const res = await fetch(`/api/posts/${deleteTarget}`, { method: 'DELETE' })
+    if (res.ok) {
+      toast.success('Post berhasil dihapus')
+      setPosts(prev => prev.filter(p => p.id !== deleteTarget))
+    } else {
+      toast.error('Gagal menghapus post')
+    }
+    setDeleteTarget(null)
   }
 
   return (
@@ -64,18 +113,26 @@ export default function Community({ userId }) {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-        <textarea value={content} onChange={e => setContent(e.target.value)} rows={3}
+        <Textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          rows={3}
           placeholder="Bagikan pengalaman budidaya Anda..."
-          className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+          className="rounded-xl bg-stone-100 border-0 focus-visible:ring-emerald-500 resize-none text-sm"
+        />
         <div className="flex flex-row items-center justify-between gap-3">
           <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer">
             <ImageIcon className="w-4 h-4" /> {file ? file.name.slice(0, 16) : 'Tambah foto'}
-            <input type="file" accept="image/*" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
+              onChange={e => setFile(e.target.files?.[0] || null)} />
           </label>
-          <button onClick={submitPost} disabled={posting || !content.trim()}
-            className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold flex items-center gap-1.5">
+          <Button
+            onClick={submitPost}
+            disabled={posting || !content.trim()}
+            className="px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 h-9 text-sm"
+          >
             {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Posting'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -87,18 +144,37 @@ export default function Community({ userId }) {
         <div className="space-y-3">
           {posts.map(p => (
             <div key={p.id} className="bg-white rounded-2xl shadow-sm p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-bold overflow-hidden">
-                  {p.profiles?.profile_photo_url ? <img src={p.profiles.profile_photo_url} alt="" className="w-full h-full object-cover" /> : (p.profiles?.full_name || '?')[0]?.toUpperCase()}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-bold overflow-hidden shrink-0">
+                    {p.profiles?.profile_photo_url
+                      ? <Image src={p.profiles.profile_photo_url} alt="" width={32} height={32} className="w-full h-full object-cover" />
+                      : (p.profiles?.full_name || '?')[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-stone-800">{p.profiles?.full_name || 'Pengguna'}</p>
+                    <p className="text-[10px] text-stone-400">{new Date(p.created_at).toLocaleString('id-ID')}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-stone-800">{p.profiles?.full_name || 'Pengguna'}</p>
-                  <p className="text-[10px] text-stone-400">{new Date(p.created_at).toLocaleString('id-ID')}</p>
-                </div>
+                {/* Tombol hapus hanya muncul jika post milik user sendiri */}
+                {p.user_id === userId && (
+                  <button onClick={() => setDeleteTarget(p.id)}
+                    className="w-7 h-7 rounded-full bg-rose-50 flex items-center justify-center text-rose-400 hover:bg-rose-100 shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
               <p className="text-sm text-stone-700 mb-2 whitespace-pre-line">{p.content}</p>
               {p.media_urls?.[0] && (
-                <img src={p.media_urls[0]} alt="media" className="w-full rounded-xl mb-2 object-cover max-h-64" />
+                <div className="relative w-full max-h-64 rounded-xl overflow-hidden mb-2">
+                  <Image
+                    src={p.media_urls[0]}
+                    alt="media post"
+                    width={600}
+                    height={400}
+                    className="w-full object-cover max-h-64"
+                  />
+                </div>
               )}
               <div className="flex flex-row items-center gap-4 pt-1">
                 <button onClick={() => toggleLike(p)} className="flex items-center gap-1.5 text-xs text-stone-500">
@@ -114,6 +190,24 @@ export default function Community({ userId }) {
       )}
 
       {activeComments && <CommentsModal postId={activeComments} onClose={() => { setActiveComments(null); load() }} />}
+
+      {/* AlertDialog konfirmasi hapus post */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Post ini akan dihapus permanen dan tidak dapat dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -138,9 +232,21 @@ function CommentsModal({ postId, onClose }) {
     if (!text.trim()) return
     setSending(true)
     try {
-      const res = await fetch(`/api/posts/${postId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) })
-      if (res.ok) { setText(''); load() }
-    } finally { setSending(false) }
+      const res = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text })
+      })
+      if (res.ok) {
+        setText('')
+        toast.success('Komentar terkirim!')
+        load()
+      } else {
+        toast.error('Gagal mengirim komentar')
+      }
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -167,9 +273,11 @@ function CommentsModal({ postId, onClose }) {
           }
         </div>
         <div className="flex flex-row gap-2 px-5 py-3 bg-white">
-          <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder="Tulis komentar..."
+          <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
+            placeholder="Tulis komentar..."
             className="flex-1 rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
-          <button onClick={send} disabled={sending} className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
+          <button onClick={send} disabled={sending}
+            className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center shrink-0">
             {sending ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
           </button>
         </div>

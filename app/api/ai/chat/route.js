@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { geminiChat, geminiGenerate } from '@/lib/gemini'
 import { calculateFeed } from '@/lib/constants/wasteGuide'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 function handleCORS(response) {
   response.headers.set('Access-Control-Allow-Origin', process.env.CORS_ORIGINS || '*')
@@ -40,6 +41,13 @@ export async function POST(request) {
   try {
     const user = await getAuthUser(supabase)
     if (!user) return err('Unauthorized', 401)
+
+    // Rate limiting: maks 15 request AI per menit per user
+    const rl = checkRateLimit(user.id)
+    if (!rl.allowed) {
+      return err(`Terlalu banyak permintaan. Coba lagi dalam ${rl.retryAfter} detik.`, 429)
+    }
+
     const body = await request.json().catch(() => ({}))
     const { message, history } = body
     if (!message) return err('Pesan wajib diisi')

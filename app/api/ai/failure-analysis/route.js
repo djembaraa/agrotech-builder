@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { geminiChat, geminiGenerate } from '@/lib/gemini'
 import { calculateFeed } from '@/lib/constants/wasteGuide'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 function handleCORS(response) {
   response.headers.set('Access-Control-Allow-Origin', process.env.CORS_ORIGINS || '*')
@@ -40,6 +41,12 @@ export async function POST(request) {
   try {
     const user = await getAuthUser(supabase)
     if (!user) return err('Unauthorized', 401)
+
+    const rl = checkRateLimit(user.id)
+    if (!rl.allowed) {
+      return err(`Terlalu banyak permintaan. Coba lagi dalam ${rl.retryAfter} detik.`, 429)
+    }
+
     const { data: logs } = await supabase.from('failure_logs')
       .select('reason, custom_reason, notes, logged_at, cycles(cycle_name, waste_type)')
       .eq('user_id', user.id)

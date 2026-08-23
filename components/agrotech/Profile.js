@@ -2,9 +2,29 @@
 
 import { useState } from 'react'
 import { Camera, Loader2, LogOut, Link2, CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_FILE_SIZE_MB = 5
+
 async function uploadAvatar(file, userId) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error('Format gambar tidak didukung. Gunakan JPG, PNG, WebP, atau GIF.')
+  }
+  if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    throw new Error(`Ukuran gambar maksimal ${MAX_FILE_SIZE_MB}MB.`)
+  }
   const supabase = getSupabaseBrowserClient()
   const ext = file.name.split('.').pop()
   const path = `${userId}/${crypto.randomUUID()}.${ext}`
@@ -23,20 +43,46 @@ export default function Profile({ user, profile, stats, onProfileUpdated, onLogo
   const save = async () => {
     setSaving(true)
     try {
-      const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: fullName, bio, profile_photo_url: profile?.profile_photo_url }) })
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: fullName, bio, profile_photo_url: profile?.profile_photo_url })
+      })
       const data = await res.json()
-      if (res.ok) onProfileUpdated(data.profile)
-    } finally { setSaving(false) }
+      if (res.ok) {
+        onProfileUpdated(data.profile)
+        toast.success('Profil berhasil disimpan!')
+      } else {
+        toast.error(data.error || 'Gagal menyimpan profil')
+      }
+    } catch {
+      toast.error('Terjadi kesalahan jaringan')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const changePhoto = async (file) => {
     setUploading(true)
     try {
       const url = await uploadAvatar(file, user.id)
-      const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ full_name: fullName, bio, profile_photo_url: url }) })
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: fullName, bio, profile_photo_url: url })
+      })
       const data = await res.json()
-      if (res.ok) onProfileUpdated(data.profile)
-    } finally { setUploading(false) }
+      if (res.ok) {
+        onProfileUpdated(data.profile)
+        toast.success('Foto profil berhasil diperbarui!')
+      } else {
+        toast.error(data.error || 'Gagal mengunggah foto')
+      }
+    } catch (e) {
+      toast.error(e.message || 'Gagal mengunggah foto')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleLinkGoogle = () => {
@@ -53,14 +99,21 @@ export default function Profile({ user, profile, stats, onProfileUpdated, onLogo
         <div className="relative">
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
             {profile?.profile_photo_url ? (
-              <img src={profile.profile_photo_url} alt="foto profil" className="w-full h-full object-cover" />
+              <Image
+                src={profile.profile_photo_url}
+                alt="foto profil"
+                width={80}
+                height={80}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <span className="text-2xl font-bold text-emerald-700">{(fullName || '?')[0]?.toUpperCase()}</span>
             )}
           </div>
           <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center cursor-pointer shadow-sm">
             {uploading ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Camera className="w-3.5 h-3.5 text-white" />}
-            <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && changePhoto(e.target.files[0])} />
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
+              onChange={e => e.target.files?.[0] && changePhoto(e.target.files[0])} />
           </label>
         </div>
         <p className="mt-3 font-semibold text-stone-800">{fullName}</p>
@@ -83,19 +136,31 @@ export default function Profile({ user, profile, stats, onProfileUpdated, onLogo
 
       <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-stone-500">Nama Lengkap</label>
-          <input value={fullName} onChange={e => setFullName(e.target.value)}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+          <Label className="text-xs font-medium text-stone-500">Nama Lengkap</Label>
+          <Input
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+            className="rounded-xl bg-stone-100 border-0 focus-visible:ring-emerald-500"
+          />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-stone-500">Bio</label>
-          <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3}
+          <Label className="text-xs font-medium text-stone-500">Bio</Label>
+          <Textarea
+            value={bio}
+            onChange={e => setBio(e.target.value)}
+            rows={3}
             placeholder="Ceritakan tentang budidaya Anda..."
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
+            className="rounded-xl bg-stone-100 border-0 focus-visible:ring-emerald-500 resize-none"
+          />
         </div>
-        <button onClick={save} disabled={saving} className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center gap-2">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Profil'}
-        </button>
+        <Button
+          onClick={save}
+          disabled={saving}
+          className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 h-10"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+          {saving ? 'Menyimpan...' : 'Simpan Profil'}
+        </Button>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
@@ -112,9 +177,31 @@ export default function Profile({ user, profile, stats, onProfileUpdated, onLogo
         )}
       </div>
 
-      <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold">
-        <LogOut className="w-4 h-4" /> Keluar
-      </button>
+      {/* Tombol Logout dengan AlertDialog konfirmasi */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold hover:bg-rose-100 transition-colors">
+            <LogOut className="w-4 h-4" /> Keluar
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-2xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Keluar dari Agrotech?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda akan keluar dari akun ini. Semua data Anda tetap tersimpan dengan aman.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onLogout}
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              Ya, Keluar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

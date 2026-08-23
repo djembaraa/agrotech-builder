@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { Calculator as CalcIcon, Loader2, Sparkles, Info } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const WASTE_OPTIONS = [
   { value: 'campuran', label: 'Campuran' },
@@ -16,44 +20,61 @@ export default function Calculator() {
   const [loading, setLoading] = useState(false)
   const [aiTips, setAiTips] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const calculate = async (e) => {
     e.preventDefault()
-    setLoading(true); setError(''); setResult(null); setAiTips('')
+    setLoading(true)
+    setResult(null)
+    setAiTips('')
     try {
       const res = await fetch('/api/calculator/estimate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ waste_weight_kg: Number(weight), waste_type: wasteType })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setResult(data.result)
-    } catch (e) { setError(e.message) } finally { setLoading(false) }
+      if (!res.ok) {
+        toast.error(data.error || 'Gagal menghitung estimasi')
+      } else {
+        setResult(data.result)
+        toast.success('Estimasi berhasil dihitung!')
+      }
+    } catch {
+      toast.error('Terjadi kesalahan jaringan')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getAiTips = async () => {
     setAiLoading(true)
     try {
       const res = await fetch('/api/ai/tips', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ waste_type: wasteType, waste_weight_kg: weight, base_tips: result?.tips })
       })
       const data = await res.json()
-      setAiTips(data.tips || data.error || '')
-    } finally { setAiLoading(false) }
+      if (!res.ok) {
+        toast.error(data.error || 'Tips AI tidak tersedia')
+      } else {
+        setAiTips(data.tips || '')
+      }
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   return (
     <div className="px-4 py-4 max-w-lg mx-auto pb-24 space-y-5">
       <div>
         <h2 className="font-montserrat text-xl font-bold text-stone-800">Kalkulator Pakan</h2>
-        <p className="text-stone-500 text-sm">Estimasi kebutuhan bibit & hasil panen</p>
+        <p className="text-stone-500 text-sm">Estimasi kebutuhan bibit &amp; hasil panen</p>
       </div>
 
-      <form onSubmit={calculate} className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-stone-500">Jenis Limbah</label>
+      <form onSubmit={calculate} className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-stone-500">Jenis Limbah</Label>
           <div className="flex flex-row gap-2">
             {WASTE_OPTIONS.map(o => (
               <button type="button" key={o.value} onClick={() => setWasteType(o.value)}
@@ -63,15 +84,26 @@ export default function Calculator() {
             ))}
           </div>
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-stone-500">Berat Limbah (kg)</label>
-          <input required type="number" min="0.1" step="0.1" value={weight} onChange={e => setWeight(e.target.value)}
-            placeholder="Contoh: 10" className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+        <div className="space-y-2">
+          <Label htmlFor="weight" className="text-xs font-medium text-stone-500">Berat Limbah (kg)</Label>
+          <Input
+            id="weight"
+            required
+            type="number"
+            min="0.1"
+            step="0.1"
+            value={weight}
+            onChange={e => setWeight(e.target.value)}
+            placeholder="Contoh: 10"
+            className="rounded-xl bg-stone-100 border-0 focus-visible:ring-emerald-500"
+          />
         </div>
-        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>}
-        <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center gap-2">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CalcIcon className="w-4 h-4" /> Hitung Estimasi</>}
-        </button>
+        <Button type="submit" disabled={loading} className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 h-10">
+          {loading
+            ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Menghitung...</>
+            : <><CalcIcon className="w-4 h-4 mr-2" /> Hitung Estimasi</>
+          }
+        </Button>
       </form>
 
       {result && (
@@ -93,10 +125,16 @@ export default function Calculator() {
             <p className="text-xs text-stone-600 leading-relaxed">{result.tips}</p>
           </div>
 
-          <button onClick={getAiTips} disabled={aiLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-stone-800 text-white text-sm font-semibold">
-            {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Dapatkan Tips AI Tambahan</>}
-          </button>
+          <Button
+            onClick={getAiTips}
+            disabled={aiLoading}
+            className="w-full rounded-xl bg-stone-800 hover:bg-stone-700 h-10"
+          >
+            {aiLoading
+              ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Memuat tips...</>
+              : <><Sparkles className="w-4 h-4 mr-2" /> Dapatkan Tips AI Tambahan</>
+            }
+          </Button>
 
           {aiTips && (
             <div className="bg-emerald-50/60 rounded-xl p-3 flex gap-2">
