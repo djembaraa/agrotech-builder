@@ -7,9 +7,9 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 const WASTE_LABELS = { campuran: 'Campuran', sayur_buah: 'Sayur/Buah', ampas_tahu: 'Ampas Tahu' }
 const STATUS_BADGE = {
-  aktif: 'bg-emerald-100 text-emerald-700',
-  panen: 'bg-amber-100 text-amber-700',
-  gagal: 'bg-rose-100 text-rose-700',
+  aktif: 'bg-eco-100 text-eco-700 border-eco-200',
+  panen: 'bg-amber-100 text-amber-700 border-amber-200',
+  gagal: 'bg-rose-100 text-rose-700 border-rose-200',
 }
 const FILTERS = [
   { key: 'semua', label: 'Semua' },
@@ -54,43 +54,51 @@ export default function Cycles({ userId, autoOpenCreate, autoOpenId, onConsumeAu
   }, [autoOpenCreate, autoOpenId, onConsumeAutoOpen])
 
   return (
-    <div className="px-4 py-4 max-w-lg mx-auto pb-24">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-montserrat text-xl font-bold text-stone-800">Siklus Budidaya</h2>
-        <button onClick={() => setShowCreate(true)}
-          className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm">
-          <Plus className="w-5 h-5 text-white" />
-        </button>
-      </div>
-
-      <div className="flex flex-row gap-2 mb-4 overflow-x-auto">
-        {FILTERS.map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${filter === f.key ? 'bg-emerald-600 text-white' : 'bg-white text-stone-500 shadow-sm'}`}>
-            {f.label}
+    <div className="min-h-screen bg-[#F9FBF9] pb-32">
+      <div className="bg-gradient-to-b from-[#E8F0E5] to-[#F9FBF9] pt-8 pb-10 px-5">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-serif text-2xl font-bold text-eco-900">Siklus Budidaya</h2>
+          <button onClick={() => setShowCreate(true)}
+            className="w-11 h-11 rounded-full bg-eco-600 hover:bg-eco-700 flex items-center justify-center shadow-lg shadow-eco-600/30 transition-transform active:scale-95">
+            <Plus className="w-5 h-5 text-white" />
           </button>
-        ))}
-      </div>
+        </div>
 
-      {loading ? (
-        <div className="space-y-2">{[1, 2, 3].map(i => <div key={i} className="h-20 bg-stone-100 rounded-2xl animate-pulse" />)}</div>
-      ) : cycles.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-stone-400 text-sm">Belum ada siklus di kategori ini.</div>
-      ) : (
-        <div className="space-y-2">
-          {cycles.map(c => (
-            <div key={c.id} onClick={() => setDetailId(c.id)}
-              className="bg-white rounded-2xl shadow-sm p-4 cursor-pointer active:scale-[0.99] transition-transform">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="font-semibold text-stone-800 text-sm">{c.cycle_name}</p>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${STATUS_BADGE[c.status]}`}>{c.status}</span>
-              </div>
-              <p className="text-xs text-stone-500">{WASTE_LABELS[c.waste_type]} • {c.waste_weight_kg} kg • {Number(c.seed_count).toLocaleString('id-ID')} bibit</p>
-              <p className="text-xs text-stone-400 mt-1">Mulai: {new Date(c.start_date).toLocaleDateString('id-ID')}</p>
-            </div>
+        <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar pb-2">
+          {FILTERS.map(f => (
+            <button key={f.key} onClick={() => setFilter(f.key)}
+              className={`px-4 py-2 rounded-[1rem] text-xs font-bold whitespace-nowrap transition-all border ${filter === f.key ? 'bg-eco-600 text-white border-eco-600 shadow-md shadow-eco-600/20' : 'bg-white text-stone-500 hover:text-stone-700 border-white shadow-sm'}`}>
+              {f.label}
+            </button>
           ))}
         </div>
-      )}
+      </div>
+
+      <div className="px-5 space-y-4 -mt-2 relative z-10">
+        {loading ? (
+          <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-28 bg-white border border-white shadow-[0_4px_15px_rgb(0,0,0,0.02)] rounded-[1.5rem] animate-pulse" />)}</div>
+        ) : cycles.length === 0 ? (
+          <div className="bg-white rounded-[1.5rem] shadow-[0_4px_15px_rgb(0,0,0,0.02)] p-8 text-center text-stone-400 font-medium text-sm border border-white">Belum ada siklus di kategori ini.</div>
+        ) : (
+          <div className="space-y-3">
+            {cycles.map(c => (
+              <div key={c.id} onClick={() => setDetailId(c.id)}
+                className="bg-white rounded-[1.5rem] shadow-[0_4px_15px_rgb(0,0,0,0.02)] p-5 cursor-pointer active:scale-[0.98] transition-transform border border-white">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-bold text-stone-800 text-base">{c.cycle_name}</p>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border ${STATUS_BADGE[c.status]}`}>{c.status}</span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-medium text-stone-500 bg-stone-50 px-2 py-1 rounded-md">{WASTE_LABELS[c.waste_type]}</span>
+                  <span className="text-xs font-medium text-stone-500 bg-stone-50 px-2 py-1 rounded-md">{c.waste_weight_kg} kg</span>
+                  <span className="text-xs font-medium text-stone-500 bg-stone-50 px-2 py-1 rounded-md">{Number(c.seed_count).toLocaleString('id-ID')} bibit</span>
+                </div>
+                <p className="text-[11px] font-medium text-stone-400 mt-1 uppercase tracking-wider">Mulai: {new Date(c.start_date).toLocaleDateString('id-ID')}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); load() }} />}
       {detailId && <DetailModal id={detailId} userId={userId} onClose={() => setDetailId(null)} onChanged={load} />}
@@ -100,15 +108,15 @@ export default function Cycles({ userId, autoOpenCreate, autoOpenId, onConsumeAu
 
 function ModalShell({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-lg w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 sticky top-0 bg-white">
-          <h3 className="font-montserrat font-bold text-stone-800">{title}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center">
+      <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:fade-in duration-300">
+        <div className="flex items-center justify-between px-6 py-5 sticky top-0 bg-white border-b border-stone-50 z-10">
+          <h3 className="font-serif text-lg font-bold text-stone-800">{title}</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors">
             <X className="w-4 h-4 text-stone-500" />
           </button>
         </div>
-        <div className="px-5 pb-6">{children}</div>
+        <div className="px-6 py-5">{children}</div>
       </div>
     </div>
   )
@@ -116,8 +124,8 @@ function ModalShell({ title, onClose, children }) {
 
 function Field({ label, children }) {
   return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-stone-500">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500">{label}</label>
       {children}
     </div>
   )
@@ -141,18 +149,18 @@ function CreateModal({ onClose, onCreated }) {
 
   return (
     <ModalShell title="Buat Siklus Baru" onClose={onClose}>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} className="space-y-4">
         <Field label="Nama Siklus">
           <input required value={form.cycle_name} onChange={e => setForm({ ...form, cycle_name: e.target.value })}
-            placeholder="Contoh: Siklus Januari #1" className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+            placeholder="Contoh: Siklus Januari #1" className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-eco-500" />
         </Field>
         <Field label="Tanggal Mulai">
           <input required type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+            className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-eco-500" />
         </Field>
         <Field label="Jenis Limbah">
           <select value={form.waste_type} onChange={e => setForm({ ...form, waste_type: e.target.value })}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+            className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-eco-500">
             <option value="campuran">Campuran</option>
             <option value="sayur_buah">Sayur/Buah</option>
             <option value="ampas_tahu">Ampas Tahu</option>
@@ -160,17 +168,17 @@ function CreateModal({ onClose, onCreated }) {
         </Field>
         <Field label="Berat Limbah (kg)">
           <input required type="number" min="0.1" step="0.1" value={form.waste_weight_kg} onChange={e => setForm({ ...form, waste_weight_kg: e.target.value })}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+            className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-eco-500" />
         </Field>
         <Field label="Jumlah Bibit (larva)">
           <input required type="number" min="1" value={form.seed_count} onChange={e => setForm({ ...form, seed_count: e.target.value })}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+            className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-eco-500" />
         </Field>
-        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>}
-        <div className="flex flex-row gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-stone-100 text-stone-600 text-sm font-semibold">Batal</button>
-          <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center gap-2">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan'}
+        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-2xl px-4 py-3">{error}</p>}
+        <div className="flex flex-row gap-3 pt-3">
+          <button type="button" onClick={onClose} className="flex-1 h-12 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-bold transition-colors">Batal</button>
+          <button type="submit" disabled={loading} className="flex-1 h-12 rounded-2xl bg-eco-600 hover:bg-eco-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-eco-600/20 active:scale-95 transition-transform">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Simpan Siklus'}
           </button>
         </div>
       </form>
@@ -180,21 +188,21 @@ function CreateModal({ onClose, onCreated }) {
 
 function InfoRow({ label, value }) {
   return (
-    <div className="bg-stone-50 rounded-xl p-2.5">
-      <p className="text-[10px] text-stone-400">{label}</p>
-      <p className="text-sm font-semibold text-stone-700">{value}</p>
+    <div className="bg-stone-50 rounded-2xl p-4 border border-stone-100">
+      <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">{label}</p>
+      <p className="text-sm font-bold text-stone-800 mt-1">{value}</p>
     </div>
   )
 }
 
 function TimelineItem({ label, date, tone }) {
-  const dot = tone === 'rose' ? 'bg-rose-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-emerald-500'
+  const dot = tone === 'rose' ? 'bg-rose-500' : tone === 'amber' ? 'bg-amber-500 shadow-amber-500/50' : 'bg-eco-500 shadow-eco-500/50'
   return (
-    <div className="flex items-start gap-3">
-      <div className={`w-2.5 h-2.5 rounded-full mt-1 ${dot}`} />
-      <div>
-        <p className="text-sm text-stone-700">{label}</p>
-        <p className="text-xs text-stone-400">{date ? new Date(date).toLocaleDateString('id-ID') : '-'}</p>
+    <div className="flex items-start gap-4">
+      <div className={`w-3 h-3 rounded-full mt-1.5 shadow-sm ${dot}`} />
+      <div className="flex-1 pb-4 border-l border-stone-100 -ml-[23px] pl-[23px]">
+        <p className="text-sm font-bold text-stone-700">{label}</p>
+        <p className="text-xs text-stone-400 font-medium mt-0.5">{date ? new Date(date).toLocaleDateString('id-ID') : '-'}</p>
       </div>
     </div>
   )
@@ -217,28 +225,28 @@ function DetailModal({ id, userId, onClose, onChanged }) {
   useEffect(() => { load() }, [load])
 
   if (loading || !data || !data.cycle) {
-    return <ModalShell title="Detail Siklus" onClose={onClose}><div className="h-40 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-600" /></div></ModalShell>
+    return <ModalShell title="Detail Siklus" onClose={onClose}><div className="h-40 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-eco-600" /></div></ModalShell>
   }
 
   const c = data.cycle
 
   return (
     <ModalShell title={c.cycle_name} onClose={onClose}>
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${STATUS_BADGE[c.status]}`}>{c.status}</span>
-          <span className="text-xs text-stone-400">Mulai {new Date(c.start_date).toLocaleDateString('id-ID')}</span>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 bg-stone-50 rounded-full w-fit p-1 pr-4 border border-stone-100">
+          <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full uppercase border ${STATUS_BADGE[c.status]}`}>{c.status}</span>
+          <span className="text-xs font-medium text-stone-500">Mulai {new Date(c.start_date).toLocaleDateString('id-ID')}</span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <InfoRow label="Jenis Limbah" value={WASTE_LABELS[c.waste_type]} />
           <InfoRow label="Berat Limbah" value={`${c.waste_weight_kg} kg`} />
-          <InfoRow label="Jumlah Bibit" value={Number(c.seed_count).toLocaleString('id-ID')} />
+          <InfoRow label="Jumlah Bibit" value={`${Number(c.seed_count).toLocaleString('id-ID')} larva`} />
           {c.harvest_weight_kg && <InfoRow label="Hasil Panen" value={`${c.harvest_weight_kg} kg`} />}
         </div>
 
-        <div>
-          <p className="text-xs font-semibold text-stone-500 mb-2">Timeline</p>
-          <div className="space-y-2">
+        <div className="bg-white border border-stone-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-4">Timeline Perjalanan</p>
+          <div className="ml-1">
             <TimelineItem label="Siklus dimulai" date={c.start_date} />
             {c.status === 'panen' && <TimelineItem label={`Dipanen — ${c.harvest_weight_kg} kg`} date={c.end_date} tone="amber" />}
             {c.status === 'gagal' && data.failure_logs?.map(f => (
@@ -249,10 +257,10 @@ function DetailModal({ id, userId, onClose, onChanged }) {
 
         {c.status === 'aktif' && (
           <div className="flex flex-row gap-3 pt-2">
-            <button onClick={() => setShowFail(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold">
+            <button onClick={() => setShowFail(true)} className="flex-1 flex items-center justify-center gap-2 h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-bold transition-colors">
               <AlertTriangle className="w-4 h-4" /> Tandai Gagal
             </button>
-            <button onClick={() => setShowHarvest(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold">
+            <button onClick={() => setShowHarvest(true)} className="flex-1 flex items-center justify-center gap-2 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition-transform">
               <CheckCircle2 className="w-4 h-4" /> Tandai Panen
             </button>
           </div>
@@ -286,22 +294,22 @@ function HarvestModal({ cycleId, userId, onClose, onDone }) {
 
   return (
     <ModalShell title="Tandai Panen" onClose={onClose}>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} className="space-y-4">
         <Field label="Berat Hasil Panen (kg)">
           <input required type="number" min="0.1" step="0.1" value={weight} onChange={e => setWeight(e.target.value)}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" />
+            className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-amber-500" />
         </Field>
         <Field label="Foto Bukti Panen (opsional)">
-          <label className="flex items-center justify-center gap-2 bg-stone-100 rounded-xl py-4 text-sm text-stone-500 cursor-pointer">
-            <Upload className="w-4 h-4" /> {file ? file.name : 'Pilih foto'}
+          <label className="flex items-center justify-center gap-2 bg-stone-50 border border-stone-100 hover:bg-stone-100 transition-colors rounded-2xl py-4 text-sm font-bold text-stone-500 cursor-pointer">
+            <Upload className="w-5 h-5 text-amber-500" /> {file ? file.name : 'Pilih foto'}
             <input type="file" accept="image/*" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
           </label>
         </Field>
-        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>}
-        <div className="flex flex-row gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-stone-100 text-stone-600 text-sm font-semibold">Batal</button>
-          <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold flex items-center justify-center gap-2">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Panen'}
+        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-2xl px-4 py-3">{error}</p>}
+        <div className="flex flex-row gap-3 pt-3">
+          <button type="button" onClick={onClose} className="flex-1 h-12 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-bold transition-colors">Batal</button>
+          <button type="submit" disabled={loading} className="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-transform">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Simpan Panen'}
           </button>
         </div>
       </form>
@@ -335,35 +343,35 @@ function FailModal({ cycleId, userId, onClose, onDone }) {
 
   return (
     <ModalShell title="Catat Kegagalan Siklus" onClose={onClose}>
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} className="space-y-4">
         <Field label="Alasan Kegagalan">
           <select value={reason} onChange={e => setReason(e.target.value)}
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-500">
+            className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-rose-500">
             {FAILURE_REASONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
         </Field>
         {reason === 'lainnya' && (
           <Field label="Alasan Lainnya">
             <input required value={customReason} onChange={e => setCustomReason(e.target.value)}
-              className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-500" />
+              className="w-full rounded-2xl bg-stone-50 px-4 h-12 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-rose-500" />
           </Field>
         )}
         <Field label="Catatan Tambahan">
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
             placeholder="Ceritakan detail kegagalan..."
-            className="w-full rounded-xl bg-stone-100 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-500" />
+            className="w-full rounded-2xl bg-stone-50 px-4 py-3 text-sm font-medium outline-none border border-stone-100 focus:ring-2 focus:ring-rose-500 resize-none" />
         </Field>
         <Field label="Foto Bukti (opsional)">
-          <label className="flex items-center justify-center gap-2 bg-stone-100 rounded-xl py-4 text-sm text-stone-500 cursor-pointer">
-            <Upload className="w-4 h-4" /> {file ? file.name : 'Pilih foto'}
+          <label className="flex items-center justify-center gap-2 bg-stone-50 border border-stone-100 hover:bg-stone-100 transition-colors rounded-2xl py-4 text-sm font-bold text-stone-500 cursor-pointer">
+            <Upload className="w-5 h-5 text-rose-500" /> {file ? file.name : 'Pilih foto'}
             <input type="file" accept="image/*" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
           </label>
         </Field>
-        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>}
-        <div className="flex flex-row gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-stone-100 text-stone-600 text-sm font-semibold">Batal</button>
-          <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold flex items-center justify-center gap-2">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tandai Gagal'}
+        {error && <p className="text-sm text-rose-600 bg-rose-50 rounded-2xl px-4 py-3">{error}</p>}
+        <div className="flex flex-row gap-3 pt-3">
+          <button type="button" onClick={onClose} className="flex-1 h-12 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-bold transition-colors">Batal</button>
+          <button type="submit" disabled={loading} className="flex-1 h-12 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 active:scale-95 transition-transform">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Tandai Gagal'}
           </button>
         </div>
       </form>
