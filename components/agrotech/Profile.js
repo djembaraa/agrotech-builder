@@ -85,10 +85,14 @@ export default function Profile({ user, profile, stats, onProfileUpdated, onLogo
     }
   }
 
-  const handleLinkGoogle = () => {
-    window.localStorage.setItem('google_auth_intent', 'link')
-    const redirectUrl = `${window.location.origin}/`
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`
+  const handleLinkGoogle = async () => {
+    const supabase = getSupabaseBrowserClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      }
+    })
   }
 
   return (

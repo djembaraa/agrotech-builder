@@ -12,9 +12,15 @@ export default function AuthScreen({ onSuccess }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleGoogleLogin = () => {
-    const redirectUrl = `${window.location.origin}/`
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`
+  const handleGoogleLogin = async () => {
+    const { getSupabaseBrowserClient } = await import('@/lib/supabase/browser')
+    const supabase = getSupabaseBrowserClient()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      }
+    })
   }
 
   const submit = async (e) => {

@@ -1,12 +1,18 @@
 import './globals.css'
 import { Providers } from './providers'
-import { Montserrat } from 'next/font/google'
+import { Lora, DM_Sans } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 
-const montserrat = Montserrat({
+const lora = Lora({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-montserrat',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-lora',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dmsans',
 })
 
 export const metadata = {
@@ -29,11 +35,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={montserrat.variable}>
+    <html lang="id" className={`${lora.variable} ${dmSans.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{__html:'window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);'}} />
       </head>
-      <body className="bg-stone-50 text-stone-900 antialiased">
+      <body className="bg-[#F9FBF9] text-stone-900 font-sans antialiased">
         <Providers>{children}</Providers>
         <Toaster position="top-center" richColors />
       </body>

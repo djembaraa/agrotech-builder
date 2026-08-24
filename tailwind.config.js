@@ -18,9 +18,22 @@ module.exports = {
       },
       extend: {
         fontFamily: {
-          montserrat: ['var(--font-montserrat)', 'sans-serif'],
+          sans: ['var(--font-dmsans)', 'sans-serif'],
+          serif: ['var(--font-lora)', 'serif'],
         },
         colors: {
+          eco: {
+            50: '#F4F7F4',
+            100: '#E4EFE5',
+            200: '#C9DEC9',
+            300: '#A4C6A5',
+            400: '#7AA77C',
+            500: '#588A5A',
+            600: '#426D44',
+            700: '#355637',
+            800: '#2C452E',
+            900: '#253A27', // Deep forest green
+          },
           border: 'hsl(var(--border))',
           input: 'hsl(var(--input))',
           ring: 'hsl(var(--ring))',
